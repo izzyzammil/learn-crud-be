@@ -62,24 +62,25 @@ export const updateProduct = async (req, res) => {
 
   let fileName = "";
   if (!req.files) fileName = product.image;
+  else {
+    const file = req.files.file;
+    const fileSize = file.data.length;
+    const ext = path.extname(file.name);
+    fileName = file.md5 + ext;
+    const allowedType = [".png", ".jpg", ".jpeg"];
 
-  const file = req.files.file;
-  const fileSize = file.data.length;
-  const ext = path.extname(file.name);
-  fileName = file.md5 + ext;
-  const allowedType = [".png", ".jpg", ".jpeg"];
+    if (!allowedType.includes(ext.toLowerCase()))
+      return res.status(422).json({ message: "Invalid Image" });
+    if (fileSize > 5000000)
+      return res.status(422).json({ message: "Image must be less than 5 MB" });
 
-  if (!allowedType.includes(ext.toLowerCase()))
-    return res.status(422).json({ message: "Invalid Image" });
-  if (fileSize > 5000000)
-    return res.status(422).json({ message: "Image must be less than 5 MB" });
+    const filePath = `./public/images/${product.image}`;
+    fs.unlinkSync(filePath);
 
-  const filePath = `./public/images/${product.image}`;
-  fs.unlinkSync(filePath);
-
-  file.mv(`./public/images/${fileName}`, async (err) => {
-    if (err) return res.status(500).json({ message: err.message });
-  });
+    file.mv(`./public/images/${fileName}`, (err) => {
+      if (err) return res.status(500).json({ message: err.message });
+    });
+  }
 
   const name = req.body.title;
   const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
